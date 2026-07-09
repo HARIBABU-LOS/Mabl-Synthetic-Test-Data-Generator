@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mabl Synthetic Test Data Generator</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <span style="font-size:1.4rem">📊</span>
+    <div>
+      <div class="logo">Mabl Synthetic Test Data Generator</div>
+      <div class="tagline">Generate exhaustive or bounded combinatorial test datasets as downloadable CSV files</div>
+    </div>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- Step progress bar -->
+    <nav class="step-progress" aria-label="Workflow steps">
+      <div class="step-item active" id="step-indicator-1">
+        <div class="step-num"><span>1</span></div>
+        <div class="step-label">Input &amp; Schema</div>
+      </div>
+      <div class="step-item" id="step-indicator-2">
+        <div class="step-num"><span>2</span></div>
+        <div class="step-label">Confirm Schema</div>
+      </div>
+      <div class="step-item" id="step-indicator-3">
+        <div class="step-num"><span>3</span></div>
+        <div class="step-label">Set Limit</div>
+      </div>
+      <div class="step-item" id="step-indicator-4">
+        <div class="step-num"><span>4</span></div>
+        <div class="step-label">Generate &amp; Download</div>
+      </div>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         STEP 1 — Input & Schema Extraction
+         ════════════════════════════════════════════════════════════════════ -->
+    <section class="card" id="step1-section" aria-labelledby="step1-title">
+      <div class="card-title" id="step1-title">
+        <span style="background:#eff6ff;color:#2563eb;border-radius:6px;padding:2px 9px;font-size:.85rem;font-weight:700;">Step 1</span>
+        Input &amp; Schema Extraction
+      </div>
+      <p class="card-subtitle">
+        Define each field and its possible values. Values are comma-separated.
+        Duplicates within a field are automatically removed.
+      </p>
+
+      <!-- Dynamic field rows -->
+      <div class="fields-container" id="fields-container" aria-label="Field definitions"></div>
+
+      <!-- Validation error -->
+      <div class="alert alert-danger hidden mt-8" id="inline-error-1" role="alert"></div>
+
+      <!-- Action buttons -->
+      <div class="btn-row mt-12">
+        <button class="btn btn-secondary" id="add-field-btn" type="button">
+          + Add Field
+        </button>
+        <button class="btn btn-primary" id="analyze-btn" type="button">
+          Analyze Schema →
+        </button>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="alert alert-info">
+        <span class="alert-icon">ℹ️</span>
+        <div>
+          <strong>Tip:</strong> Enter one field per row. The generator will compute the full Cartesian product
+          (every possible combination) of all field values. You can optionally cap the output in the next step.
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         STEP 2 — Schema Confirmation
+         ════════════════════════════════════════════════════════════════════ -->
+    <section class="card hidden" id="step2-section" aria-labelledby="step2-title">
+      <div class="card-title" id="step2-title">
+        <span style="background:#eff6ff;color:#2563eb;border-radius:6px;padding:2px 9px;font-size:.85rem;font-weight:700;">Step 2</span>
+        Schema Confirmation
+      </div>
+      <p class="card-subtitle">
+        Review your extracted schema below. Confirm it is correct before proceeding,
+        or click <strong>Edit</strong> to make changes.
+      </p>
+
+      <table class="schema-table" role="table" aria-label="Extracted schema">
+        <thead>
+          <tr>
+            <th scope="col">Field Name</th>
+            <th scope="col">Value Count</th>
+            <th scope="col">Possible Values</th>
+          </tr>
+        </thead>
+        <tbody id="schema-table-body"></tbody>
+      </table>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="edit-schema-btn" type="button">
+          ← Edit Schema
+        </button>
+        <button class="btn btn-primary" id="confirm-schema-btn" type="button">
+          ✓ Confirm Schema &amp; Continue →
+        </button>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         STEP 3 — Calculate Combinations & Limit Selection
+         ════════════════════════════════════════════════════════════════════ -->
+    <section class="card hidden" id="step3-section" aria-labelledby="step3-title">
+      <div class="card-title" id="step3-title">
+        <span style="background:#eff6ff;color:#2563eb;border-radius:6px;padding:2px 9px;font-size:.85rem;font-weight:700;">Step 3</span>
+        Combination Count &amp; Generation Limit
+      </div>
+      <p class="card-subtitle">
+        Choose how many rows to generate. The total represents the full Cartesian product of all field values.
+      </p>
+
+      <!-- Combination count display -->
+      <div class="combo-display">
+        <div class="combo-number" id="combo-number">0</div>
+        <div class="combo-label">Total Possible Combinations</div>
+        <div class="combo-formula" id="combo-formula"></div>
+      </div>
+
+      <!-- Warning for very large sets -->
+      <div class="alert alert-warning hidden" id="combo-warning" role="alert"></div>
+
+      <!-- Limit options -->
+      <p class="text-sm text-muted mt-8" style="margin-bottom:10px;font-weight:600;">
+        Select generation limit:
+      </p>
+
+      <div class="limit-options">
+        <!-- Option A — All combinations -->
+        <label class="limit-option selected" for="option-all">
+          <input type="radio" id="option-all" name="limit-type" value="all" checked>
+          <div>
+            <div class="option-label">Option A — Generate ALL combinations</div>
+            <div class="option-desc">Produces the complete Cartesian product dataset.</div>
+          </div>
+        </label>
+
+        <!-- Option B — Capped -->
+        <label class="limit-option" for="option-cap">
+          <input type="radio" id="option-cap" name="limit-type" value="cap">
+          <div style="flex:1">
+            <div class="option-label">Option B — Cap at a specific number of rows</div>
+            <div class="option-desc">Rows are generated in order (first N combinations).</div>
+            <!-- Cap input — shown when Option B is selected -->
+            <div class="limit-cap-input hidden" id="cap-input-group">
+              <input
+                type="number"
+                id="cap-input"
+                min="1"
+                max="1000000"
+                placeholder="e.g. 5000"
+                aria-label="Maximum number of rows">
+              <span class="text-sm text-muted">rows</span>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Validation error -->
+      <div class="alert alert-danger hidden" id="inline-error-3" role="alert"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-lg" id="generate-btn" type="button">
+          ⚙ Generate CSV →
+        </button>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         STEP 4 — Generation Progress & Download
+         ════════════════════════════════════════════════════════════════════ -->
+    <section class="card hidden" id="step4-section" aria-labelledby="step4-title">
+      <div class="card-title" id="step4-title">
+        <span style="background:#eff6ff;color:#2563eb;border-radius:6px;padding:2px 9px;font-size:.85rem;font-weight:700;">Step 4</span>
+        Data Generation &amp; Download
+      </div>
+      <p class="card-subtitle">Processing combinations internally — no raw data is displayed here.</p>
+
+      <!-- Progress block -->
+      <div class="progress-block">
+        <div class="progress-status" id="progress-status">Status: Initialising...</div>
+        <div class="progress-bar-outer">
+          <div class="progress-bar-inner" id="progress-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Download area (shown on completion) -->
+      <div class="download-section hidden mt-16" id="download-section">
+        <div class="dl-icon">✅</div>
+        <div class="dl-title">Dataset ready!</div>
+        <div class="dl-meta" id="dl-row-count"></div>
+        <div class="dl-meta" id="dl-file-size"></div>
+        <a class="btn btn-success btn-lg" id="download-link" href="#" download>⬇ Download CSV</a>
+        <p class="text-sm text-muted">
+          The file download should start automatically. Click the button above if it didn't.
+        </p>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="btn-row">
+        <button class="btn btn-outline" id="restart-btn" type="button">
+          ↺ Start Over
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    Mabl Synthetic Test Data Generator &mdash; All processing is performed locally in your browser. No data is sent to any server.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
